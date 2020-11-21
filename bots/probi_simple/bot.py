@@ -1,5 +1,5 @@
 
-__author__ = '박현수 (hspark8312@ncsoft.com), NCSOFT Game AI Lab'
+__author__ = '남현준'
 
 import time
 
@@ -11,9 +11,8 @@ from sc2.ids.buff_id import BuffId
 
 class Bot(sc2.BotAI):
     """
-    밤까 1 전순1 그외 해병만 뽑는 봇 
-    밤까마귀는 디텍터 및 자동포탑만 사용하며
-    전순은 체력이 10% 아래로 줄어들면 차원도약을 사용한다.
+    밴시, 해병만 뽑는 봇
+    밴시는 적 조우시 은폐한다.
     해병은 적 조우시 스팀팩을 사용한다. (이전 코드 재사용)
     
     """
@@ -36,7 +35,7 @@ class Bot(sc2.BotAI):
         if len(self.build_order) == 0:
             for _ in range(5):
                 self.build_order.append(UnitTypeId.MARINE)
-            self.build_order.append(UnitTypeId.MEDIVAC)
+            self.build_order.append(UnitTypeId.BANSHEE)
 
         #
         # 사령부 명령 생성
@@ -78,14 +77,22 @@ class Bot(sc2.BotAI):
                         self.evoked[(marine.tag, AbilityId.EFFECT_STIM)] = self.time
 
         #
-        # 의료선 명령 생성
+        # 밴시 명령 생성
         #
-        medivacs = self.units(UnitTypeId.MEDIVAC)  # 의료선 검색
-        wounded_units = marines.filter(lambda u: u.health_percentage < 1.0)  # 체력이 100% 이하인 유닛 검색
-        for medivac in medivacs:
-            if wounded_units.exists:
-                wounded_unit = wounded_units.closest_to(medivac)  # 가장 가까운 체력이 100% 이하인 유닛
-                actions.append(medivac(AbilityId.MEDIVACHEAL_HEAL, wounded_unit))  # 유닛 치료 명령
+        banshees = self.units(UnitTypeId.BANSHEE)  # 의료선 검색
+        for banshee in banshees:
+            enemy_cc = self.enemy_start_locations[0]  # 적 시작 위치
+            enemy_unit = self.enemy_start_locations[0]
+            if self.known_enemy_units.exists:
+                enemy_unit = self.known_enemy_units.closest_to(banshee)  # 가장 가까운 적 유닛
+            else:
+                target = enemy_unit
+            actions.append(marine.attack(target))
+
+            if banshee.distance_to(target) < 10:                                                                        # 밴시와 목표의 거리가 10이하일 경우 은폐장 사용
+                if not banshee.has_buff(BuffId.BANSHEECLOAK) and banshee.energy > 50:                                   # 현재 은폐장 사용중이 아니며, 에너지 50 이상인 경우
+                        actions.append(banshee(AbilityId.BEHAVIOR_CLOAKON_BANSHEE))
+                        self.evoked[(banshee.tag, AbilityId.BEHAVIOR_CLOAKON_BANSHEE)] = self.time
 
         await self.do_actions(actions)
 
