@@ -87,7 +87,7 @@ class Bot(sc2.BotAI):
                 enemy_unit = self.known_enemy_units.closest_to(banshee)  # 가장 가까운 적 유닛
             else:
                 target = enemy_unit
-            actions.append(marine.attack(target))
+            actions.append(banshee.attack(target))
 
             if banshee.distance_to(target) < 10:                                                                        # 밴시와 목표의 거리가 10이하일 경우 은폐장 사용
                 if not banshee.has_buff(BuffId.BANSHEECLOAK) and banshee.energy > 50:                                   # 현재 은폐장 사용중이 아니며, 에너지 50 이상인 경우
